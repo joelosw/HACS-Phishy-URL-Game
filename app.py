@@ -25,7 +25,8 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QShortcut,
     QVBoxLayout,
-    QWidget
+    QWidget,
+    QProgressBar
 )
 
 
@@ -36,6 +37,7 @@ class App(QMainWindow):
     label_layout: QBoxLayout
     combine_layout: QBoxLayout
     correct_url: bool = None
+    score: int = 0
 
     def __init__(
         self,
@@ -80,30 +82,47 @@ class App(QMainWindow):
         self.button_layout.addWidget(self.button_false, 1)
         self.global_layout.addLayout(self.button_layout)
 
+        # self.time_bar = QProgressBar(self)
+        # self.time_bar.setMaximum(10)
+        # self.time_bar.setValue(5)
+        # self.time_bar.setStyleSheet("QProgressBar::chunk "
+        #                             "{"
+        #                             "background-color: green;"
+        #                             "}")
+
+        # self.global_layout.addWidget(self.time_bar)
+
         self.window = QWidget()  # Main Widget
         self.window.setLayout(self.global_layout)
         self.setCentralWidget(self.window)
         self.show()
         self.next_random_question()
 
-        # pixmap = QPixmap(path).scaledToHeight(512)
-        # self.preview.setPixmap(pixmap)
-
-        # self.shortcut_next = QShortcut(
-        #     QKeySequence(QtCore.Qt.Key_Return), self)
-        # self.shortcut_next.activated.connect(self.result_click_callback)
-
-        # self.shortcut_undo = QShortcut(
-        #     QKeySequence(QtCore.Qt.Key_Backspace), self)
-        # self.shortcut_undo.activated.connect(self.undo)
-
     def correct_clicked(self):
+        """
+        Define what happens if the button "correct" was clicked
+        """
+        if self.correct_url:
+            self.score += 10
+        else:
+            self.score -= 10
         self.next_random_question()
 
     def false_clicked(self):
+        """
+        Define what happens if the button "FALSE" was clicked
+        """
+        if self.correct_url:
+            self.score -= 10
+        else:
+            self.score += 10
         self.next_random_question()
 
     def next_random_question(self):
+        """
+        Randomly decide whether the next question should be a valid url or a phishy url
+        """
+        self.setWindowTitle(f'Score: {self.score}')
         if random.randint(0, 1) > 0.5:
             self.set_new_question_correct()
         else:
@@ -116,7 +135,7 @@ class App(QMainWindow):
         pix = QPixmap.fromImage(qim).scaledToHeight(128)
         self.widget_image.setPixmap(pix)
         self.widget_image.setAlignment(QtCore.Qt.AlignCenter)
-        self.widget_url.setText(q.real_url)
+        self.widget_url.setText(q.random_correct_url)
         self.widget_image.repaint()
         self.widget_url.repaint()
 
@@ -130,11 +149,3 @@ class App(QMainWindow):
         self.widget_url.setText(q.random_false_url)
         self.widget_image.repaint()
         self.widget_url.repaint()
-
-
-q1 = Question('logos/facebook.png', 'https://www.facebook.com')
-q2 = Question('logos/microsoft.jpeg', 'https://www.mirosoft.com')
-app = QApplication(sys.argv)
-q_set = set([q1, q2])
-ex = App(q_set)
-sys.exit(app.exec_())
