@@ -76,8 +76,25 @@ class Question():
             url_split.insert(-1, random.choice(random_words.split(' ')))
 
         elif mode == 3:
-            print('ATTENTION MODE 3 NOT IMPLEMENTED YET')
+            # Randomly define wether to repeat or skip one character:
+            host_name = url_split[-2]
+            if random.random() <= 0.5:
+                # Repeat one character randomly
+                # 1. Get characteer
+                c = random.choice(host_name)
+                # 2. Find where character appears in word
+                idx = host_name.find(c)
+                # 3. re-insert character at same place as original character
+                host_name_list = list(host_name)
+                host_name_list.insert(idx, c)
+                host_name = ''.join(host_name_list)
 
+            else:
+                # delete one character randomly
+                idx = random.randint(0, len(host_name) - 1)
+                host_name = [x for i, x in enumerate(host_name) if i != idx]
+                host_name = ''.join(host_name)
+            url_split[-2] = host_name
         url = '.'.join(url_split)
         url = prefix + url + '/' + random.choice(random_words.split(' '))
         return url
