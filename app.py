@@ -33,7 +33,7 @@ from PyQt5.QtWidgets import (
 
 class App(QMainWindow):
     question_set: Set[Question]
-    global_layout: QBoxLayout
+    interaction_layout: QBoxLayout
     label_layout: QBoxLayout
     combine_layout: QBoxLayout
     correct_url: bool = None
@@ -65,7 +65,8 @@ class App(QMainWindow):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left_padding, self.top_padding,
                          self.width, self.height)
-        self.global_layout = QVBoxLayout()
+        self.global_layout = QHBoxLayout()
+        self.interaction_layout = QVBoxLayout()
         self.button_layout = QHBoxLayout()
         self.button_true = QPushButton("Correct")
         self.button_true.setMinimumHeight(50)
@@ -76,14 +77,17 @@ class App(QMainWindow):
         self.button_false.setStyleSheet("background-color: {}".format('red'))
         self.button_false.clicked.connect(self.false_clicked)
         self.widget_image = QLabel(self)
+        self.widget_image.setAlignment(QtCore.Qt.AlignCenter)
         self.widget_url = QLabel(self)
-        self.global_layout.addWidget(self.widget_image)
-        self.global_layout.addWidget(self.widget_url)
+        self.score_board = QLabel(self)
+        self.widget_url.setFont(QFont('Arial', 35))
+        self.interaction_layout.addWidget(self.widget_image)
+        self.interaction_layout.addWidget(self.widget_url)
         self.widget_url.setFont(QFont('Arial', 35))
         self.widget_url.setAlignment(QtCore.Qt.AlignCenter)
         self.button_layout.addWidget(self.button_true, 5)
         self.button_layout.addWidget(self.button_false, 1)
-        self.global_layout.addLayout(self.button_layout)
+        self.interaction_layout.addLayout(self.button_layout)
 
         self.time_bar = QProgressBar(self)
         self.time_bar.setMaximum(1000)
@@ -94,45 +98,56 @@ class App(QMainWindow):
                                     "}")
         self.time_bar.setTextVisible(True)
         self.time_bar.setAlignment(QtCore.Qt.AlignCenter)
-        self.global_layout.addWidget(self.time_bar)
+        self.interaction_layout.addWidget(self.time_bar)
 
         self.timer.timeout.connect(self.set_time_bar_status)
         self.timer.start(50)
 
         self.window = QWidget()  # Main Widget
+
+        self.global_layout.addLayout(self.interaction_layout)
+        self.global_layout.addWidget(self.score_board)
         self.window.setLayout(self.global_layout)
         self.setCentralWidget(self.window)
         self.show()
-        self.next_random_question()
+        self.load_next_screen()
 
     def set_time_bar_status(self):
-        time_remaining = 10 - (time.time() - self.question_start_time)
-        if time_remaining <= 0:
+        self.time_remaining = 10 - (time.time() - self.question_start_time)
+        if self.time_remaining <= 0:
             self.score -= 10
-            self.next_random_question()
+            self.score_board.setStyleSheet('background-color: red')
+            self.load_next_screen()
+        self.time_bar.setValue(self.time_remaining*100)
+        self.time_bar.setFormat(f'{round(self.time_remaining, 1)} s')
 
-        self.time_bar.setValue(time_remaining*100)
-        self.time_bar.setFormat(f'{round(time_remaining, 1)} s')
+    def load_next_screen(self):
+        self.score_board.setText('Points: \n {}'.format(self.score))
+        self.next_random_question()
 
     def correct_clicked(self):
         """
         Define what happens if the button "correct" was clicked
         """
         if self.correct_url:
-            self.score += round(self.time_remaining) * 2
+            self.score += (round(self.time_remaining) * 2)
+            self.score_board.setStyleSheet('background-color: green')
         else:
             self.score -= 10
-        self.next_random_question()
+            self.score_board.setStyleSheet('background-color: red')
+        self.load_next_screen()
 
     def false_clicked(self):
         """
         Define what happens if the button "FALSE" was clicked
         """
         if self.correct_url:
-            self.score -= round(self.time_remaining) * 2
+            self.score -= 10
+            self.score_board.setStyleSheet('background-color: red')
         else:
-            self.score += 10
-        self.next_random_question()
+            self.score += (round(self.time_remaining) * 2)
+            self.score_board.setStyleSheet('background-color: green')
+        self.load_next_screen()
 
     def next_random_question(self):
         """
@@ -151,7 +166,6 @@ class App(QMainWindow):
         qim = ImageQt.ImageQt(q.logo_file)
         pix = QPixmap.fromImage(qim).scaledToHeight(128)
         self.widget_image.setPixmap(pix)
-        self.widget_image.setAlignment(QtCore.Qt.AlignCenter)
         self.widget_url.setText(q.random_correct_url)
         self.widget_image.repaint()
         self.widget_url.repaint()
@@ -162,7 +176,6 @@ class App(QMainWindow):
         qim = ImageQt.ImageQt(q.logo_file)
         pix = QPixmap.fromImage(qim).scaledToHeight(128)
         self.widget_image.setPixmap(pix)
-        self.widget_image.setAlignment(QtCore.Qt.AlignCenter)
         self.widget_url.setText(q.random_false_url)
         self.widget_image.repaint()
         self.widget_url.repaint()
