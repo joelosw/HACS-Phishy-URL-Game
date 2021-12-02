@@ -14,6 +14,7 @@ from question_class import Question
 import numpy as np
 from PIL import Image, ImageDraw, ImageQt
 from PyQt5 import QtCore
+from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QIcon, QKeySequence, QPixmap, QFont
 from PyQt5.QtWidgets import (
     QApplication,
@@ -32,12 +33,14 @@ from PyQt5.QtWidgets import (
 
 class App(QMainWindow):
     question_set: Set[Question]
-    show_next_image_handler = QtCore.pyqtSignal()
+    time_bar_handler = QtCore.pyqtSignal()
     global_layout: QBoxLayout
     label_layout: QBoxLayout
     combine_layout: QBoxLayout
     correct_url: bool = None
     score: int = 0
+    question_start_time: float = 0
+    timer = QTimer()
 
     def __init__(
         self,
@@ -82,21 +85,40 @@ class App(QMainWindow):
         self.button_layout.addWidget(self.button_false, 1)
         self.global_layout.addLayout(self.button_layout)
 
-        # self.time_bar = QProgressBar(self)
-        # self.time_bar.setMaximum(10)
-        # self.time_bar.setValue(5)
-        # self.time_bar.setStyleSheet("QProgressBar::chunk "
-        #                             "{"
-        #                             "background-color: green;"
-        #                             "}")
+        self.time_bar = QProgressBar(self)
+        self.time_bar.setMaximum(1000)
+        self.time_bar.setValue(1000)
+        self.time_bar.setStyleSheet("QProgressBar::chunk "
+                                    "{"
+                                    "background-color: green;"
+                                    "}")
+        self.time_bar.setTextVisible(True)
+        self.time_bar.setAlignment(QtCore.Qt.AlignCenter)
+        self.global_layout.addWidget(self.time_bar)
 
-        # self.global_layout.addWidget(self.time_bar)
+        self.time_bar_handler.connect(self.set_time_bar_status)
+
+        def set_timebar_thread():
+            while True:
+                self.time_bar_handler.emit()
+                time.sleep(0.05)
+
+        Thread(target=set_timebar_thread, daemon=True).start()
 
         self.window = QWidget()  # Main Widget
         self.window.setLayout(self.global_layout)
         self.setCentralWidget(self.window)
         self.show()
         self.next_random_question()
+
+    def set_time_bar_status(self):
+        time_remaining = 10 - (time.time() - self.question_start_time)
+        if time_remaining <= 0:
+            self.score -= 10
+            self.next_random_question()
+
+        self.time_bar.setValue(time_remaining*100)
+        self.time_bar.setFormat(f'{round(time_remaining, 1)} s')
 
     def correct_clicked(self):
         """
@@ -127,6 +149,7 @@ class App(QMainWindow):
             self.set_new_question_correct()
         else:
             self.set_new_question_phyishy()
+        self.question_start_time = time.time()
 
     def set_new_question_correct(self):
         self.correct_url = True
