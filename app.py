@@ -33,7 +33,6 @@ from PyQt5.QtWidgets import (
 
 class App(QMainWindow):
     question_set: Set[Question]
-    time_bar_handler = QtCore.pyqtSignal()
     global_layout: QBoxLayout
     label_layout: QBoxLayout
     combine_layout: QBoxLayout
@@ -41,6 +40,7 @@ class App(QMainWindow):
     score: int = 0
     question_start_time: float = 0
     timer = QTimer()
+    time_remaining: float = 0
 
     def __init__(
         self,
@@ -96,14 +96,8 @@ class App(QMainWindow):
         self.time_bar.setAlignment(QtCore.Qt.AlignCenter)
         self.global_layout.addWidget(self.time_bar)
 
-        self.time_bar_handler.connect(self.set_time_bar_status)
-
-        def set_timebar_thread():
-            while True:
-                self.time_bar_handler.emit()
-                time.sleep(0.05)
-
-        Thread(target=set_timebar_thread, daemon=True).start()
+        self.timer.timeout.connect(self.set_time_bar_status)
+        self.timer.start(50)
 
         self.window = QWidget()  # Main Widget
         self.window.setLayout(self.global_layout)
@@ -125,7 +119,7 @@ class App(QMainWindow):
         Define what happens if the button "correct" was clicked
         """
         if self.correct_url:
-            self.score += 10
+            self.score += round(self.time_remaining) * 2
         else:
             self.score -= 10
         self.next_random_question()
@@ -135,7 +129,7 @@ class App(QMainWindow):
         Define what happens if the button "FALSE" was clicked
         """
         if self.correct_url:
-            self.score -= 10
+            self.score -= round(self.time_remaining) * 2
         else:
             self.score += 10
         self.next_random_question()
