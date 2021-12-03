@@ -3,9 +3,10 @@ import numpy as np
 import urllib
 from urllib.parse import urljoin
 import random
-import os
+import logging
 from typing import Tuple
 from PIL import Image
+
 
 random_words = 'personal index home account language start login logout organization legal calendar' + \
     ' network cloud estonia ee device security office'
@@ -37,7 +38,6 @@ class Question():
         self.logo_file = Image.open(logo_path)
         self.real_url = true_url
 
-    @ property
     def random_false_url(self, mode: int = None) -> str:
         """Generate a random, false URL
 
@@ -57,10 +57,13 @@ class Question():
         if mode is None:
             mode = random.randint(1, 3)
 
-        (original_url, prefix) = self.remove_protocol()
+        logging.debug('Altering Question in mode {}'.format(mode))
+
+        (original_url, prefix) = self.remove_protocol(self.real_url)
         url_split = original_url.split('.')
 
         if mode == 1:
+            # Randomly insert a punctuation in the hostname
             host_split = url_split[-2].split('/')
             host = host_split[-1]
             insert_index = random.randint(1, len(host) - 1)
@@ -73,6 +76,7 @@ class Question():
             host_name = ''.join(host_split)
             url_split[-2] = host_name
         elif mode == 2:
+            # Randomly insert a word as new hostname
             url_split.insert(-1, random.choice(random_words.split(' ')))
 
         elif mode == 3:
@@ -97,9 +101,10 @@ class Question():
             url_split[-2] = host_name
         url = '.'.join(url_split)
         url = prefix + url + '/' + random.choice(random_words.split(' '))
+        logging.debug('Generated URL {} in mode {}'.format(url, mode))
         return url
 
-    def remove_protocol(self) -> Tuple[str, str]:
+    def remove_protocol(self, url) -> Tuple[str, str]:
         """
         helper function to remove http:// - like protocol in front of the url.
 
@@ -108,7 +113,7 @@ class Question():
         Tuple[str, str]
             (url without protocol, protocol)
         """
-        original_url = self.real_url
+        original_url = url
         prefix = ''
         if "https://" in original_url:
             prefix = "https://"
@@ -118,7 +123,6 @@ class Question():
             original_url = original_url.replace("http://", "")
         return (original_url, prefix)
 
-    @property
     def random_correct_url(self) -> str:
         """
         Generate a random URL that is still valid.
@@ -129,18 +133,20 @@ class Question():
         str
             the random, valid url
         """
-        (original_url, prefix) = self.remove_protocol()
+        (original_url, prefix) = self.remove_protocol(self.real_url)
         url_split = original_url.split('.')
         r_words = random_words.split(' ')
         if len(url_split) > 2:
-            r_words = r_words + url_split[:2]
+            r_words = r_words + url_split[:-2]
             url_split = url_split[-2:]
-        num_random_words = random.randint(0, 3)
+        num_random_words = random.randint(0, 2)
         add_words = random.sample(r_words, k=num_random_words)
         [url_split.insert(-2, word) for word in add_words]
-        return prefix + '.'.join(url_split)
+        url = prefix + '.'.join(url_split)
+        return url
 
 
 if __name__ == '__main__':
     q1 = Question('logos/facebook.png', 'http://www.facebook.com')
-    print(q1.random_false_url)
+    for i in range(150):
+        print(q1.random_false_url())

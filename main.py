@@ -3,11 +3,13 @@ Main file that runs the game.
 First, it loads a set of questions,
     afterwards it starts the game with those questions.
 """
-import sys
-import signal
-from app import App
-from set_of_questions import question_set
 from PyQt5.QtWidgets import QApplication
+from set_of_questions import question_set
+from app import App
+import signal
+import sys
+import logging
+logging.basicConfig(encoding='utf-8', level=logging.DEBUG)
 
 
 app = QApplication(sys.argv)

@@ -1,30 +1,22 @@
-import argparse
-import json
 import os
 import sys
 import time
-import urllib.request
 import random
-from collections import defaultdict
-from itertools import zip_longest
-from queue import Empty, Queue
-from threading import Thread
+import logging
 from typing import Dict, List, Optional, Tuple, Set
 from question_class import Question
 import numpy as np
 from PIL import Image, ImageDraw, ImageQt
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QIcon, QKeySequence, QPixmap, QFont
+from PyQt5.QtGui import QPixmap, QFont
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import (
-    QApplication,
     QBoxLayout,
-    QButtonGroup,
     QHBoxLayout,
     QLabel,
     QMainWindow,
     QPushButton,
-    QShortcut,
     QVBoxLayout,
     QWidget,
     QProgressBar
@@ -55,7 +47,7 @@ class App(QMainWindow):
         self.title = "URL Game"
         self.left_padding = 10
         self.top_padding = 10
-        self.width = 512
+        self.width = 900
         self.height = 400
         self.current_key = ""
         self.label_qt_obj = {}
@@ -65,8 +57,9 @@ class App(QMainWindow):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left_padding, self.top_padding,
                          self.width, self.height)
-        self.global_layout = QHBoxLayout()
-        self.interaction_layout = QVBoxLayout()
+        self.global_layout = QVBoxLayout()
+        self.interaction_layout = QHBoxLayout()
+        self.question_layout = QVBoxLayout()
         self.button_layout = QHBoxLayout()
         self.button_true = QPushButton("Correct")
         self.button_true.setMinimumHeight(50)
@@ -80,14 +73,16 @@ class App(QMainWindow):
         self.widget_image.setAlignment(QtCore.Qt.AlignCenter)
         self.widget_url = QLabel(self)
         self.score_board = QLabel(self)
+        self.score_board.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
+        self.score_board.setStyleSheet("")
         self.widget_url.setFont(QFont('Arial', 35))
-        self.interaction_layout.addWidget(self.widget_image)
-        self.interaction_layout.addWidget(self.widget_url)
+        self.question_layout.addWidget(self.widget_image)
+        self.question_layout.addWidget(self.widget_url)
         self.widget_url.setFont(QFont('Arial', 35))
         self.widget_url.setAlignment(QtCore.Qt.AlignCenter)
         self.button_layout.addWidget(self.button_true, 5)
         self.button_layout.addWidget(self.button_false, 1)
-        self.interaction_layout.addLayout(self.button_layout)
 
         self.time_bar = QProgressBar(self)
         self.time_bar.setMaximum(1000)
@@ -98,19 +93,25 @@ class App(QMainWindow):
                                     "}")
         self.time_bar.setTextVisible(True)
         self.time_bar.setAlignment(QtCore.Qt.AlignCenter)
-        self.interaction_layout.addWidget(self.time_bar)
 
         self.timer.timeout.connect(self.set_time_bar_status)
         self.timer.start(50)
 
         self.window = QWidget()  # Main Widget
-
+        # self.window.setFixedSize(self.width, self.height)
+        self.interaction_layout.addLayout(self.question_layout)
+        self.interaction_layout.addWidget(self.score_board)
         self.global_layout.addLayout(self.interaction_layout)
-        self.global_layout.addWidget(self.score_board)
+        self.global_layout.addLayout(self.button_layout)
+        self.global_layout.addWidget(self.time_bar)
         self.window.setLayout(self.global_layout)
         self.setCentralWidget(self.window)
         self.show()
         self.load_next_screen()
+
+    def set_score_style(self, color: str):
+        self.score_board.setStyleSheet(
+            'border: 2px solid black; background-color: {}'.format(color))
 
     def set_time_bar_status(self):
         self.time_remaining = 10 - (time.time() - self.question_start_time)
@@ -130,11 +131,12 @@ class App(QMainWindow):
         Define what happens if the button "correct" was clicked
         """
         if self.correct_url:
-            self.score += (round(self.time_remaining) * 2)
-            self.score_board.setStyleSheet('background-color: green')
+            self.score += (round(self.time_remaining) * 1)
+            self.set_score_style("green")
         else:
             self.score -= 10
-            self.score_board.setStyleSheet('background-color: red')
+            self.set_score_style("red")
+
         self.load_next_screen()
 
     def false_clicked(self):
@@ -143,10 +145,10 @@ class App(QMainWindow):
         """
         if self.correct_url:
             self.score -= 10
-            self.score_board.setStyleSheet('background-color: red')
+            self.set_score_style("red")
         else:
-            self.score += (round(self.time_remaining) * 2)
-            self.score_board.setStyleSheet('background-color: green')
+            self.score += (round(self.time_remaining) * 1)
+            self.set_score_style("green")
         self.load_next_screen()
 
     def next_random_question(self):
@@ -156,17 +158,22 @@ class App(QMainWindow):
         self.setWindowTitle(f'Score: {self.score}')
         if random.randint(0, 1) > 0.5:
             self.set_new_question_correct()
+            logging.info('Loading Correct Question')
         else:
             self.set_new_question_phyishy()
+            logging.info('Loading Phishy Question')
         self.question_start_time = time.time()
+
+    def set_url(self, url: str):
+        self.widget_url.setText(url)
 
     def set_new_question_correct(self):
         self.correct_url = True
         q = random.choice(list(self.question_set))
         qim = ImageQt.ImageQt(q.logo_file)
-        pix = QPixmap.fromImage(qim).scaledToHeight(128)
+        pix = QPixmap.fromImage(qim).scaledToWidth(256)
         self.widget_image.setPixmap(pix)
-        self.widget_url.setText(q.random_correct_url)
+        self.set_url(q.random_correct_url())
         self.widget_image.repaint()
         self.widget_url.repaint()
 
@@ -174,8 +181,8 @@ class App(QMainWindow):
         self.correct_url = False
         q = random.choice(list(self.question_set))
         qim = ImageQt.ImageQt(q.logo_file)
-        pix = QPixmap.fromImage(qim).scaledToHeight(128)
+        pix = QPixmap.fromImage(qim).scaledToWidth(256)
         self.widget_image.setPixmap(pix)
-        self.widget_url.setText(q.random_false_url)
+        self.set_url(q.random_false_url())
         self.widget_image.repaint()
         self.widget_url.repaint()
