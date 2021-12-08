@@ -1,12 +1,9 @@
-import os
-import sys
 import time
 import random
 import logging
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Set
 from question_class import Question
-import numpy as np
-from PIL import Image, ImageDraw, ImageQt
+from PIL import ImageQt
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QPixmap, QFont
@@ -21,6 +18,7 @@ from PyQt5.QtWidgets import (
     QWidget,
     QProgressBar
 )
+logger = logging.getLogger('App')
 
 
 class App(QMainWindow):
@@ -158,10 +156,10 @@ class App(QMainWindow):
         self.setWindowTitle(f'Score: {self.score}')
         if random.randint(0, 1) > 0.5:
             self.set_new_question_correct()
-            logging.info('Loading Correct Question')
+            logger.info('Loading Correct Question')
         else:
             self.set_new_question_phyishy()
-            logging.info('Loading Phishy Question')
+            logger.info('Loading Phishy Question')
         self.question_start_time = time.time()
 
     def set_url(self, url: str):

@@ -1,11 +1,9 @@
-import cv2
-import numpy as np
-import urllib
-from urllib.parse import urljoin
 import random
 import logging
 from typing import Tuple
 from PIL import Image
+logging.basicConfig(encoding='utf-8', level=logging.INFO)
+logger = logging.getLogger('Question')
 
 
 random_words = 'personal index home account language start login logout organization legal calendar' + \
@@ -35,7 +33,8 @@ class Question():
             [description], by default None
         """
         super().__init__()
-        self.logo_file = Image.open(logo_path)
+        logger.info('Loading Image {}'.format(logo_path))
+        self.logo_file = Image.open(logo_path).convert('RGBA')
         self.real_url = true_url
 
     def random_false_url(self, mode: int = None) -> str:
@@ -57,7 +56,7 @@ class Question():
         if mode is None:
             mode = random.randint(1, 3)
 
-        logging.debug('Altering Question in mode {}'.format(mode))
+        logger.debug('Altering Question in mode {}'.format(mode))
 
         (original_url, prefix) = self.remove_protocol(self.real_url)
         url_split = original_url.split('.')
@@ -101,7 +100,7 @@ class Question():
             url_split[-2] = host_name
         url = '.'.join(url_split)
         url = prefix + url + '/' + random.choice(random_words.split(' '))
-        logging.debug('Generated URL {} in mode {}'.format(url, mode))
+        logger.debug('Generated URL {} in mode {}'.format(url, mode))
         return url
 
     def remove_protocol(self, url) -> Tuple[str, str]:
@@ -147,6 +146,6 @@ class Question():
 
 
 if __name__ == '__main__':
-    q1 = Question('logos/facebook.png', 'http://www.facebook.com')
-    for i in range(150):
-        print(q1.random_false_url())
+    q1 = Question('logos/Bolt.png', 'http://www.facebook.com')
+    # for i in range(150):
+    #     print(q1.random_false_url())
