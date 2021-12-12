@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en" style="height: 100%;">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        /*For smooth animations*/
+        @keyframes roundtime {
+        to {
+            /* More performant than animating `width` */
+            transform: scaleX(0);
+            }
+        }
+
+        .loading-bar-animation {
+            animation: roundtime calc(5s) linear forwards;
+        }
+    </style>
+
+    <script>
+        var score = 0; // Player score
+        var total = 0; // Total number of questions asked
+        var correctAnswer = 0;
+        var timerID;
+
+        async function fnAnswer(value){
+                if (value ==correctAnswer){
+                    console.log("correct answer")
+                } else {
+                    console.log("wrong answer")
+                }
+                score+=value
+                total++
+
+                //Update scoreboard
+                var scoreBoard = document.getElementById("scoreBoard");
+                scoreBoard.innerHTML = score+"/"+total;
+
+                stopTimer(); // Stop timer
+                clearTimeout(timerID); //Clear timeout
+                updateQuestion(); //Fetch new question
+        }
+
+       async function updateQuestion(){
+            //Fetch new question form the backend
+            let response = await fetch('/question')
+
+                if (response.status === 200){
+                    var image = document.getElementById("logo");
+                    var url = document.getElementById("URL");
+
+                    let data = await response.json();
+
+                    image.src = data.logo;
+                    url.innerHTML = data.url;
+                    correctAnswer = data.answer;
+                    
+                    console.log(data)
+                }
+            
+            //Start timer for new question
+            startTimer();
+        }
+
+    //Animate progress bar with 10 second timer
+    function startTimer() {
+            var elem = document.getElementById("progress-indicator");
+            elem.classList.add("loading-bar-animation")
+
+            timerID = setTimeout(stopTimer, 5000)
+    }
+
+    //Stop timer and reset loading bar
+    function stopTimer() {
+        var elem = document.getElementById("progress-indicator");
+        elem.classList.remove("loading-bar-animation");
+    }
+     
+    updateQuestion(); //TEMP: Start game on page load
+    </script>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+    <title>HACS Assignment 4 game</title>
+  </head>
+  <body style="height: 100%;">
+    <div class="p-3 container bg-light" style="height: 100%;">
+        <div class="row p-3">
+            <h1>Can you spot the phishing link</h1>
+        </div>
+        <div class="row p-3">
+            Hackers often use websites with address similar to popular websites, in order to spot the difference between legitimate sites and malicious ones you should always check sites for typos and read domain name from right to left
+        </div>
+        <div class="row p-3">
+            <h2 class="text-center" id="scoreBoard">0/0</h2>
+        </div>
+        <div class="row p-3">
+            <img id="logo" class="img-fluid mx-auto" src="/static/logos/amazon.png" style="max-width: 50%; height: auto;max-height: 20em;">
+        </div>
+        <div class="row p-3 w-100">
+           <h2 id="URL" class="text-center">URL</h2> 
+        </div>
+        <div class="row p-3">
+            <div class="progress p-1">
+                <div class="progress-bar bg-info" role="progressbar" onload="timer();" id="progress-indicator" style="width: 100%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+        <div class="row bottom">
+            <div class="col">
+                <button type="button" onclick="fnAnswer(1)" class="btn w-100 btn-success">
+                    True
+                </button>
+            </div>
+            <div class="col">
+                <button type="button" onclick="fnAnswer(0)" class="btn w-100 btn-danger">
+                    False
+                </button>     
+            </div>
+        </div>
+      </div>
+   
+
+
+
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+</body>
+</html>
