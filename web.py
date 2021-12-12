@@ -4,21 +4,14 @@ import random
 
 app = Flask(__name__,static_url_path='/static')
 
+#Default route for serving index template
 @app.route('/',methods=['GET'])
 def main():
     return render_template("index.html")
 
-@app.route('/answer',methods=['GET'])
-def check_answer():
-    answer=request.args.get("value")
-    if answer == correctAnswer:
-        return "1"
-    else:
-        return "0"
-
+#Route for front end to query new question from Joel's question class
 @app.route('/question',methods=["GET"])
 def fetch_question():
-    #I will have to integrate Joels question classes form question sets
     q = random.choice(list(question_set))
     logoPath = "static/"+q.logo_path
     if random.randint(0, 1) > 0.5:
