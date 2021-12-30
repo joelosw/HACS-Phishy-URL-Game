@@ -36,6 +36,7 @@ class Question():
         logger.info('Loading Image {}'.format(logo_path))
         self.logo_file = Image.open(logo_path).convert('RGBA')
         self.real_url = true_url
+        self.logo_path = logo_path
 
     def random_false_url(self, mode: int = None) -> str:
         """Generate a random, false URL
